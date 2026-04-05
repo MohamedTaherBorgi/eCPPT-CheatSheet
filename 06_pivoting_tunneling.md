@@ -1,8 +1,3 @@
-# 06 — Pivoting & Tunneling
-> eCPPTv3 Cheatsheet | Attacker-Mindset Reference
-
----
-
 ## Table of Contents
 1. [Concepts & Mental Model](#1-concepts--mental-model)
 2. [Network Recon Through a Pivot](#2-network-recon-through-a-pivot)
