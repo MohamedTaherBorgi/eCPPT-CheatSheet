@@ -1,8 +1,3 @@
-# 05 — Active Directory
-> eCPPTv3 Cheatsheet | Attacker-Mindset Reference
-
----
-
 ## Table of Contents
 1. [Environment Setup](#1-environment-setup)
 2. [AD Enumeration (Unauthenticated)](#2-ad-enumeration-unauthenticated)
