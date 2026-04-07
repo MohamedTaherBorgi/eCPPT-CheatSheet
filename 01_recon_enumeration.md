@@ -1,8 +1,3 @@
-# 01 — Recon & Enumeration
-> eCPPTv3 Cheatsheet | Attacker-Mindset Reference
-
----
-
 ## Table of Contents
 1. [Methodology & Mental Model](#1-methodology--mental-model)
 2. [Passive Recon](#2-passive-recon)
