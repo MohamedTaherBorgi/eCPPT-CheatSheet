@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "01_recon_enumeration.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -185,7 +185,9 @@
   },
   "active": "742a1cdd6ecd77b8",
   "lastOpenFiles": [
-    "05_active_directory.md",
-    "06_pivoting_tunneling.md"
+    "README.md",
+    "01_recon_enumeration.md",
+    "06_pivoting_tunneling.md",
+    "05_active_directory.md"
   ]
 }
