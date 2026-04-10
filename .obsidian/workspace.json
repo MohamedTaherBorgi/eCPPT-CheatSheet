@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "enum4",
+                "query": "vhost",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
