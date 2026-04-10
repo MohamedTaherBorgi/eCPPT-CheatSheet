@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "enum4",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "856a8ad1a7b470d1",
@@ -185,9 +185,11 @@
   },
   "active": "742a1cdd6ecd77b8",
   "lastOpenFiles": [
-    "README.md",
+    "04_post_exploitation.md",
+    "05_active_directory.md",
     "01_recon_enumeration.md",
-    "06_pivoting_tunneling.md",
-    "05_active_directory.md"
+    "03_exploitation.md",
+    "README.md",
+    "06_pivoting_tunneling.md"
   ]
 }

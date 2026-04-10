@@ -56,7 +56,9 @@ whois $DOMAIN
 
 ```bash
 # Resolve a domain to its IP(s)
-host $DOMAIN
+host $DOMAIN          #Ask the internet via dns server in /etc/resolv.conf
+
+host $DOMAIN $TARGET  #Ask the target machine
 ```
 
 ```bash
