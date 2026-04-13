@@ -388,11 +388,20 @@ crackmapexec smb $TARGET
 crackmapexec smb $TARGET -u username -p password --shares
 ```
 
+#### RID is last part of SID (SID is constant RID changes) (<u>You need a user like "guest" to get the static SID first then RID bruteforce</u>)
+
 ```Bash
 crackmapexec smb $TARGET -u 'guest' -p '' --rid-brute
 
 crackmapexec smb $TARGET -u 'anonymous' -p '' --rid-brute
 ```
+#### Or with Impacket 
+
+```bash
+Impacket-lookupsid domain/user:password@10.10.10.15
+```
+
+---
 
 ```bash
 # Enumerate logged-on users
@@ -928,7 +937,7 @@ ldapsearch -x -H ldap://$DC_IP -b "DC=vulnnet-rst,DC=local" "(objectClass=domain
 ```
 
 ```Bash
-# Enumerate ALL Domain Users
+# Enumerate ALL Domain Users (Global Catalog)
 ldapsearch -x -H ldap://$DC_IP:3268 -b "DC=vulnnet-rst,DC=local" "(objectClass=user)" sAMAccountName | grep sAMAccountName
 ```
 
