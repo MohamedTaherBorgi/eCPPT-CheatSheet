@@ -708,7 +708,6 @@ rpcinfo -p $TARGET
 >    
 >- If port 111 is filtered, `rpcinfo` will wait for a long timeout period before giving up.
 >    
->- Looking at your Nmap results, **port 111 is not in your list of open ports.**
 
 ```bash
 # Enumerate RPC via Nmap
